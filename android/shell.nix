@@ -21,6 +21,7 @@ in
       jdk17
       gradle
       androidSdk.androidsdk
+      android-tools
     ];
 
     shellHook = ''

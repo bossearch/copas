@@ -13,6 +13,7 @@ import androidx.compose.ui.Modifier
 import androidx.compose.ui.unit.dp
 import androidx.compose.ui.platform.LocalContext
 import kotlinx.coroutines.launch
+import android.content.ClipData
 
 class MainActivity : ComponentActivity() {
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -36,29 +37,11 @@ fun MainScreen(
 ) {
     var serverUrl by remember { mutableStateOf(settings.serverUrl) }
     var token by remember { mutableStateOf(settings.authToken) }
-    var status by remember { mutableStateOf("Not synced") }
+    var status by remember { mutableStateOf("Ready") }
     var configured by remember { mutableStateOf(settings.isConfigured) }
 
     val scope = rememberCoroutineScope()
     val context = LocalContext.current
-
-    LaunchedEffect(configured) {
-        if (configured) {
-            clipboardMonitor.startMonitoring { text ->
-                if (text.isNotBlank()) {
-                    scope.launch {
-                        try {
-                            val client = ApiClient(serverUrl, token)
-                            client.pushClipboard(text)
-                            status = "Pushed: ${text.take(20)}"
-                        } catch (e: Exception) {
-                            status = "Push failed: ${e.message}"
-                        }
-                    }
-                }
-            }
-        }
-    }
 
     Column(
         modifier = Modifier
@@ -87,32 +70,68 @@ fun MainScreen(
             settings.serverUrl = serverUrl
             settings.authToken = token
             configured = settings.isConfigured
-            status = "Saved"
+            status = if (configured) "Configuration saved" else "Invalid configuration"
         }) {
-            Text("Save")
+            Text("Save Configuration")
         }
 
         if (configured) {
             Button(onClick = {
                 scope.launch {
                     try {
+                        // Get current clipboard content
+                        val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+                        val clipData = clipboard.primaryClip
+
+                        if (clipData != null && clipData.itemCount > 0) {
+                            val text = clipData.getItemAt(0).text.toString()
+                            if (text.isNotBlank()) {
+                                val client = ApiClient(serverUrl, token)
+                                client.pushClipboard(text)
+                                status = "Pushed to PC: ${text.take(20)}${if (text.length > 20) "..." else ""}"
+                            } else {
+                                status = "Clipboard is empty"
+                            }
+                        } else {
+                            status = "No clipboard content found"
+                        }
+                    } catch (e: Exception) {
+                        status = "Push failed: ${e.message ?: "Unknown error"}"
+                    }
+                }
+            }, enabled = configured) {
+                Text("Push to PC")
+            }
+
+            Button(onClick = {
+                scope.launch {
+                    try {
                         val client = ApiClient(serverUrl, token)
                         val text = client.pullClipboard()
 
+                        // Set to Android clipboard
                         val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                        val clip = android.content.ClipData.newPlainText("copas", text)
+                        val clip = ClipData.newPlainText("copas", text)
                         clipboard.setPrimaryClip(clip)
 
-                        status = "Pulled: ${text.take(20)}..."
+                        status = "Pulled from PC: ${text.take(20)}${if (text.length > 20) "..." else ""}"
                     } catch (e: Exception) {
-                        status = "Pull failed: ${e.message}"
+                        status = "Pull failed: ${e.message ?: "Unknown error"}"
                     }
                 }
-            }) {
+            }, enabled = configured) {
                 Text("Pull from PC")
             }
         }
 
         Text(status, style = MaterialTheme.typography.bodyMedium)
+
+        if (!configured) {
+            Text(
+                "Please save configuration first",
+                color = MaterialTheme.colorScheme.error,
+                style = MaterialTheme.typography.bodySmall
+            )
+        }
     }
 }
