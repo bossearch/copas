@@ -1,52 +1,45 @@
 package copas.app
 
+import android.app.PendingIntent
+import android.content.Intent
 import android.service.quicksettings.TileService
-import android.content.Context
-import android.content.ClipboardManager
+import android.util.Log
 import android.widget.Toast
 import android.os.Handler
 import android.os.Looper
-import kotlinx.coroutines.CoroutineScope
-import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.launch
 
 class PushTileService : TileService() {
 
+    companion object {
+        const val TAG = "PushTileService"
+        const val REQUEST_CODE_PUSH_TILE = 1001
+        const val ACTION_PUSH_FROM_TILE = "copas.app.PUSH_FROM_TILE_ACTION"
+    }
+
     override fun onClick() {
         super.onClick()
+        Log.d(TAG, "Push tile clicked.")
 
-        val clipboard = applicationContext.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-        val clip = clipboard.primaryClip
+        showToast("Launching Copas...")
 
-        if (clip == null || clip.itemCount == 0) {
-            showToast("Clipboard empty")
-            return
+        val intent = Intent(this, MainActivity::class.java).apply {
+            action = ACTION_PUSH_FROM_TILE
+            flags = Intent.FLAG_ACTIVITY_NEW_TASK or Intent.FLAG_ACTIVITY_CLEAR_TOP
+            putExtra("PUSH_FROM_TILE", true)
         }
 
-        val text = clip.getItemAt(0).text?.toString() ?: ""
-        if (text.isBlank()) {
-            showToast("Not text content")
-            return
-        }
+        val pendingIntent = PendingIntent.getActivity(
+            this,
+            REQUEST_CODE_PUSH_TILE,
+            intent,
+            PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE
+        )
 
-        showToast("Pushing to PC...")
-
-        Handler(Looper.getMainLooper()).post {
-            CoroutineScope(Dispatchers.IO).launch {
-                try {
-                    val settings = SettingsManager(this@PushTileService)
-                    if (!settings.isConfigured) {
-                        showToastOnMainThread("Copas not configured")
-                        return@launch
-                    }
-
-                    val client = ApiClient(settings.serverUrl, settings.authToken)
-                    client.pushClipboard(text)
-                    showToastOnMainThread("Pushed to PC")
-                } catch (e: Exception) {
-                    showToastOnMainThread("Push failed: ${e.message ?: "Unknown error"}")
-                }
-            }
+        try {
+            startActivityAndCollapse(pendingIntent)
+        } catch (e: Exception) {
+            Log.e(TAG, "Failed to start MainActivity from tile using PendingIntent: ${e.message}", e)
+            showToastOnMainThread("Failed to launch Copas: ${e.message}")
         }
     }
 
