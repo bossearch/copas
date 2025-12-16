@@ -9,7 +9,7 @@
 namespace {
 std::unique_ptr<std::thread> g_http_thread;
 std::atomic<bool> g_running{false};
-} // namespace
+}
 
 void startClient(int port, const std::string &authToken) {
   if (g_running)
@@ -19,11 +19,16 @@ void startClient(int port, const std::string &authToken) {
   g_http_thread = std::make_unique<std::thread>([port, authToken]() {
     httplib::Server svr;
 
-    svr.Get("/pull", [](const auto &, auto &res) {
+    svr.Get("/pull", [authToken](const httplib::Request &req, httplib::Response &res) {
+      if (req.get_param_value("token") != authToken) {
+        res.status = 401;
+        res.set_content("Unauthorized", "text/plain");
+        return;
+      }
       res.set_content(getClipboard(), "text/plain");
     });
 
-    svr.Post("/push", [authToken](const auto &req, auto &res) {
+    svr.Post("/push", [authToken](const httplib::Request &req, httplib::Response &res) {
       if (req.get_param_value("token") != authToken) {
         res.status = 401;
         res.set_content("Unauthorized", "text/plain");
