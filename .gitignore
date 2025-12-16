@@ -7,3 +7,9 @@ android/gradlew
 android/gradlew.bat
 android/app/build/
 android/kls_database.db
+android/.idea
+android/local.properties
+
+android/app/src/main/res/mipmap-*/
+!android/app/src/main/res/mipmap-anydpi-v26/
+!android/app/src/main/res/mipmap-anydpi-v26/**

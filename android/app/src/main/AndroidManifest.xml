@@ -23,7 +23,7 @@
         </activity>
       <service
             android:name=".PushTileService"
-            android:icon="@drawable/ic_qs_push"
+            android:icon="@drawable/ic_push"
             android:label="Push to PC"
             android:exported="true"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
@@ -34,7 +34,7 @@
 
         <service
             android:name=".PullTileService"
-            android:icon="@drawable/ic_qs_pull"
+            android:icon="@drawable/ic_pull"
             android:label="Pull from PC"
             android:exported="true"
             android:permission="android.permission.BIND_QUICK_SETTINGS_TILE">
