@@ -7,18 +7,13 @@ import androidx.compose.material3.lightColorScheme
 import androidx.compose.runtime.Composable
 
 @Composable
-fun CopasTheme(
-    darkTheme: Boolean = isSystemInDarkTheme(),
-    content: @Composable () -> Unit
-) {
-    val colorScheme = if (darkTheme) {
-        darkColorScheme()
-    } else {
-        lightColorScheme()
-    }
+fun CopasTheme(darkTheme: Boolean = isSystemInDarkTheme(), content: @Composable () -> Unit) {
+  val colorScheme =
+          if (darkTheme) {
+            darkColorScheme()
+          } else {
+            lightColorScheme()
+          }
 
-    MaterialTheme(
-        colorScheme = colorScheme,
-        content = content
-    )
+  MaterialTheme(colorScheme = colorScheme, content = content)
 }

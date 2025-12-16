@@ -6,3 +6,4 @@ android/gradle/
 android/gradlew
 android/gradlew.bat
 android/app/build/
+android/kls_database.db
