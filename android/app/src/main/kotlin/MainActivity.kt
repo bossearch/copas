@@ -18,6 +18,7 @@ import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
 
 class MainActivity : ComponentActivity() {
+
   private var pushFromTileRequest by mutableStateOf(false)
 
   override fun onCreate(savedInstanceState: Bundle?) {
@@ -27,14 +28,11 @@ class MainActivity : ComponentActivity() {
     val settings = SettingsManager(this)
 
     setContent {
-      val (localPushRequest, setLocalPushRequest) = remember { mutableStateOf(pushFromTileRequest) }
-      LaunchedEffect(pushFromTileRequest) { setLocalPushRequest(pushFromTileRequest) }
-
       CopasTheme {
         MainScreen(
                 settings = settings,
-                shouldPushFromTile = localPushRequest,
-                onPushFromTileHandled = { if (pushFromTileRequest) pushFromTileRequest = false }
+                shouldPushFromTile = pushFromTileRequest,
+                onPushFromTileHandled = { pushFromTileRequest = false }
         )
       }
     }
@@ -46,69 +44,49 @@ class MainActivity : ComponentActivity() {
   }
 
   private fun handleIntent(intent: Intent?) {
-    if (intent?.extras?.getBoolean("PUSH_FROM_TILE", false) == true) {
+    if (intent?.getBooleanExtra("PUSH_FROM_TILE", false) == true) {
       pushFromTileRequest = true
+      intent.removeExtra("PUSH_FROM_TILE")
     }
   }
-}
-
-suspend fun waitForClipboardText(
-        context: Context,
-        timeoutMs: Long = 1000,
-        intervalMs: Long = 50
-): String? {
-  val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-  val start = System.currentTimeMillis()
-
-  while (System.currentTimeMillis() - start < timeoutMs) {
-    val clip = clipboard.primaryClip
-    if (clip != null && clip.itemCount > 0) {
-      val text = clip.getItemAt(0).coerceToText(context)?.toString()
-      if (!text.isNullOrBlank()) return text
-    }
-    delay(intervalMs)
-  }
-  return null
 }
 
 @Composable
 fun MainScreen(
         settings: SettingsManager,
         shouldPushFromTile: Boolean,
-        onPushFromTileHandled: (Boolean) -> Unit
+        onPushFromTileHandled: () -> Unit
 ) {
   var serverUrl by remember { mutableStateOf(settings.serverUrl) }
   var token by remember { mutableStateOf(settings.authToken) }
   var status by remember { mutableStateOf("Ready") }
   var configured by remember { mutableStateOf(settings.isConfigured) }
-  var isPerformingPushFromTile by remember { mutableStateOf(false) }
+  var isPerformingPush by remember { mutableStateOf(false) }
 
   val scope = rememberCoroutineScope()
   val context = LocalContext.current
 
   LaunchedEffect(shouldPushFromTile) {
-    if (shouldPushFromTile && !isPerformingPushFromTile && configured) {
-      isPerformingPushFromTile = true
-      status = "Pushing clipboard..."
+    if (!shouldPushFromTile || isPerformingPush || !configured) return@LaunchedEffect
 
-      try {
-        val text = waitForClipboardText(context)
+    isPerformingPush = true
+    status = "Pushing clipboard..."
 
-        if (text != null) {
-          val client = ApiClient(serverUrl, token)
-          client.pushClipboard(text)
-          status = "Pushed: ${text.take(20)}${if (text.length > 20) "..." else ""}"
-          onPushFromTileHandled(true)
-        } else {
-          status = "Clipboard empty - nothing to push"
-          onPushFromTileHandled(false)
-        }
-      } catch (e: Exception) {
-        status = "Push failed: ${e.message ?: "Unknown error"}"
-        onPushFromTileHandled(false)
-      } finally {
-        isPerformingPushFromTile = false
+    try {
+      val text = waitForClipboardText(context)
+
+      if (!text.isNullOrBlank()) {
+        val client = ApiClient(serverUrl, token)
+        client.pushClipboard(text)
+        status = "Pushed: ${text.take(20)}${if (text.length > 20) "..." else ""}"
+      } else {
+        status = "Clipboard empty - nothing to push"
       }
+    } catch (e: Exception) {
+      status = "Push failed: ${e.message ?: "Unknown error"}"
+    } finally {
+      isPerformingPush = false
+      onPushFromTileHandled()
     }
   }
 
@@ -146,29 +124,27 @@ fun MainScreen(
       Button(
               onClick = {
                 scope.launch {
-                  try {
-                    val clipboard =
-                            context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
-                    val clipData = clipboard.primaryClip
+                  isPerformingPush = true
+                  status = "Pushing clipboard..."
 
-                    if (clipData != null && clipData.itemCount > 0) {
-                      val text = clipData.getItemAt(0).text.toString()
-                      if (text.isNotBlank()) {
-                        val client = ApiClient(serverUrl, token)
-                        client.pushClipboard(text)
-                        status = "Pushed: ${text.take(20)}${if (text.length > 20) "..." else ""}"
-                      } else {
-                        status = "Clipboard is empty"
-                      }
+                  try {
+                    val text = waitForClipboardText(context)
+
+                    if (!text.isNullOrBlank()) {
+                      val client = ApiClient(serverUrl, token)
+                      client.pushClipboard(text)
+                      status = "Pushed: ${text.take(20)}${if (text.length > 20) "..." else ""}"
                     } else {
-                      status = "No clipboard content found"
+                      status = "Clipboard empty"
                     }
                   } catch (e: Exception) {
                     status = "Push failed: ${e.message ?: "Unknown error"}"
+                  } finally {
+                    isPerformingPush = false
                   }
                 }
               },
-              enabled = configured && !isPerformingPushFromTile
+              enabled = !isPerformingPush
       ) { Text("Push to PC") }
 
       Button(
@@ -187,19 +163,33 @@ fun MainScreen(
                     status = "Pull failed: ${e.message ?: "Unknown error"}"
                   }
                 }
-              },
-              enabled = configured
+              }
       ) { Text("Pull from PC") }
     }
 
-    Text(status, style = MaterialTheme.typography.bodyMedium)
+    Text(status)
 
     if (!configured) {
-      Text(
-              "Please save configuration first",
-              color = MaterialTheme.colorScheme.error,
-              style = MaterialTheme.typography.bodySmall
-      )
+      Text("Please save configuration first", color = MaterialTheme.colorScheme.error)
     }
   }
+}
+
+private suspend fun waitForClipboardText(
+        context: Context,
+        timeoutMs: Long = 1000,
+        intervalMs: Long = 50
+): String? {
+  val clipboard = context.getSystemService(Context.CLIPBOARD_SERVICE) as ClipboardManager
+  val start = System.currentTimeMillis()
+
+  while (System.currentTimeMillis() - start < timeoutMs) {
+    val clip = clipboard.primaryClip
+    if (clip != null && clip.itemCount > 0) {
+      val text = clip.getItemAt(0).coerceToText(context)?.toString()
+      if (!text.isNullOrBlank()) return text
+    }
+    delay(intervalMs)
+  }
+  return null
 }
