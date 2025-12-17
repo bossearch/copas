@@ -16,8 +16,6 @@ class PullTileService : TileService() {
   override fun onClick() {
     super.onClick()
 
-    showToast("Pulling from PC...")
-
     Handler(Looper.getMainLooper()).post {
       CoroutineScope(Dispatchers.IO).launch {
         try {
@@ -40,10 +38,6 @@ class PullTileService : TileService() {
         }
       }
     }
-  }
-
-  private fun showToast(message: String) {
-    Toast.makeText(this, message, Toast.LENGTH_SHORT).show()
   }
 
   private fun showToastOnMainThread(message: String) {
