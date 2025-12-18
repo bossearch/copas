@@ -25,7 +25,8 @@ class PullTileService : TileService() {
             return@launch
           }
 
-          val client = ApiClient(settings.serverUrl, settings.authToken)
+          val url = "http://${settings.serverHost}:${settings.serverPort.ifBlank { "6669" }}"
+          val client = ApiClient(url, settings.authToken)
           val text = client.pullClipboard()
 
           val clipboard =

@@ -58,19 +58,18 @@ android {
 }
 
 dependencies {
-  implementation("androidx.core:core-ktx:1.12.0")
-  implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
   implementation("androidx.activity:activity-compose:1.8.2")
-  implementation("androidx.compose.ui:ui:1.6.0")
   implementation("androidx.compose.material3:material3:1.2.0")
-
-  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
-  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
-
-  implementation("io.ktor:ktor-client-core:2.3.10")
+  implementation("androidx.compose.material:material-icons-extended:1.6.0")
+  implementation("androidx.compose.ui:ui:1.6.0")
+  implementation("androidx.core:core-ktx:1.12.0")
+  implementation("androidx.lifecycle:lifecycle-runtime-compose:2.7.0")
+  implementation("androidx.lifecycle:lifecycle-runtime-ktx:2.7.0")
+  implementation("com.google.android.material:material:1.12.0")
   implementation("io.ktor:ktor-client-android:2.3.10")
   implementation("io.ktor:ktor-client-content-negotiation:2.3.10")
+  implementation("io.ktor:ktor-client-core:2.3.10")
   implementation("io.ktor:ktor-serialization-kotlinx-json:2.3.10")
-  implementation("com.google.android.material:material:1.12.0")
-
+  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-android:1.7.3")
+  implementation("org.jetbrains.kotlinx:kotlinx-coroutines-core:1.7.3")
 }
