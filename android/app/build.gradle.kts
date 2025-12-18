@@ -1,17 +1,16 @@
 import java.util.Properties
 
-val localProperties = Properties().apply {
-  val file = rootProject.file("local.properties")
-  if (file.exists()) {
-    file.inputStream().use { load(it) }
-  }
-}
+val localProperties =
+        Properties().apply {
+          val file = rootProject.file("local.properties")
+          if (file.exists()) {
+            file.inputStream().use { load(it) }
+          }
+        }
 
-val copasServerUrl: String =
-  localProperties.getProperty("COPAS_SERVER_URL") ?: ""
+val copasServerUrl: String = localProperties.getProperty("COPAS_SERVER_URL") ?: ""
 
-val copasAuthToken: String =
-  localProperties.getProperty("COPAS_AUTH_TOKEN") ?: ""
+val copasAuthToken: String = localProperties.getProperty("COPAS_AUTH_TOKEN") ?: ""
 
 plugins {
   id("com.android.application") version "8.5.0"
@@ -29,18 +28,13 @@ android {
     versionCode = 1
     versionName = "1.0"
 
-    buildConfigField(
-      "String",
-      "DEFAULT_SERVER_URL",
-      "\"$copasServerUrl\""
-    )
+    buildConfigField("String", "DEFAULT_SERVER_URL", "\"$copasServerUrl\"")
 
-    buildConfigField(
-      "String",
-      "DEFAULT_AUTH_TOKEN",
-      "\"$copasAuthToken\""
-    )
+    buildConfigField("String", "DEFAULT_AUTH_TOKEN", "\"$copasAuthToken\"")
+
+    buildTypes { release { signingConfig = signingConfigs.getByName("debug") } }
   }
+
 
   compileOptions {
     sourceCompatibility = JavaVersion.VERSION_17
