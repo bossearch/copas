@@ -11,8 +11,8 @@ using json = nlohmann::json;
 AppConfig loadConfig() {
   const char *home = std::getenv("HOME");
   if (!home) {
-    std::cerr << "$HOME not set, using default token\n";
-    return {"default-token"};
+    std::cerr << "$HOME not set, using defaults\n";
+    return {6669, "copas-auto-generated-secret"};
   }
 
   std::string configDir = std::string(home) + "/.config/copas";
@@ -28,23 +28,33 @@ AppConfig loadConfig() {
   std::ifstream infile(configPath);
   if (!infile) {
     json cfg;
+    cfg["port"] = 6669;
     cfg["auth_token"] = "copas-auto-generated-secret";
     std::ofstream outfile(configPath);
     outfile << std::setw(2) << cfg << std::endl;
     std::cout << "Created config: " << configPath << "\n";
-    return {cfg["auth_token"]};
+    return {6669, "copas-auto-generated-secret"};
   }
 
   try {
     json data = json::parse(infile);
-    if (data.contains("auth_token") && data["auth_token"].is_string()) {
-      return {data["auth_token"]};
+    AppConfig cfg;
+
+    if (data.contains("port") && data["port"].is_number_integer()) {
+      cfg.port = data["port"];
     } else {
-      std::cerr << "Invalid config, using default token\n";
-      return {"default-token"};
+      cfg.port = 6669;
     }
+
+    if (data.contains("auth_token") && data["auth_token"].is_string()) {
+      cfg.auth_token = data["auth_token"];
+    } else {
+      cfg.auth_token = "copas-auto-generated-secret";
+    }
+
+    return cfg;
   } catch (const std::exception &e) {
-    std::cerr << "Parse error: " << e.what() << ", using default\n";
-    return {"default-token"};
+    std::cerr << "Parse error: " << e.what() << ", using defaults\n";
+    return {6669, "copas-auto-generated-secret"};
   }
 }
