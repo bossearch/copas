@@ -39,7 +39,7 @@ stdenv.mkDerivation {
     mainProgram = "copas";
     description = "Copas is Copy Paste Send between Linux (Wayland) and Android";
     homepage = "https://github.com/bossearch/copas";
-    license = licenses.mit;
+    license = licenses.gpl3Plus;
     platforms = platforms.linux;
   };
 }
