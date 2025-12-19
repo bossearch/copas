@@ -38,3 +38,7 @@ target_compile_definitions(copas PRIVATE
   _XOPEN_SOURCE=700
   _GNU_SOURCE
 )
+
+install(TARGETS copas
+  RUNTIME DESTINATION bin
+)

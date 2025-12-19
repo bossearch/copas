@@ -1,4 +1,5 @@
 build/*
+result
 
 android/.gradle/*
 android/build/
