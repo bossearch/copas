@@ -33,6 +33,7 @@ stdenv.mkDerivation {
 
   cmakeFlags = [
     "-DCMAKE_BUILD_TYPE=Release"
+    "-DCOPAS_USE_SYSTEM_DEPS=ON"
   ];
 
   meta = with lib; {

@@ -32,8 +32,6 @@
           gtk3
           libayatana-appindicator
           wl-clipboard
-          nlohmann_json
-          httplib
         ];
       };
     });
