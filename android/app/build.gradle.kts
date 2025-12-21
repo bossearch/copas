@@ -26,7 +26,7 @@ android {
     minSdk = 26
     targetSdk = 34
     versionCode = 1
-    versionName = "1.0"
+    versionName = "v0.1.0"
 
     buildConfigField("String", "DEFAULT_SERVER_URL", "\"$copasServerUrl\"")
 
